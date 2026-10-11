@@ -1,0 +1,25 @@
+[Unit]
+Description=TutSys Lesson Notification Daemon
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html/tutsys3.0/daemons
+ExecStart=/usr/bin/php /var/www/html/tutsys3.0/daemons/lesson_notification_daemon.php
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/www/html/tutsys3.0/daemons/daemon.log
+StandardError=append:/var/www/html/tutsys3.0/daemons/daemon_error.log
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits (optional - adjust as needed)
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

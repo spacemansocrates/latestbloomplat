@@ -1,0 +1,11 @@
+{
+  "backup": "C:\\Users\\KAMEHA~1\\AppData\\Local\\Temp\\tutsys-tutor-20260913-110825",
+  "excluded": [
+    ".env",
+    "uploads",
+    "vendor",
+    "node_modules",
+    ".git"
+  ],
+  "files": 454
+}

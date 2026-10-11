@@ -1,0 +1,8 @@
+.env
+vendor/
+daemons/*.log
+daemons/daemon_error.log
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp

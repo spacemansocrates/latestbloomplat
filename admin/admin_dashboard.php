@@ -1,0 +1,724 @@
+<?php
+// admin_dashboard.php — platform overview and the admin's morning work queue.
+//
+// The page is ordered by how actionable a thing is, not by how impressive it looks:
+// the backlog rail first (that is the reason to open this page at all), then the
+// day's counts, then today's schedule, then the trend charts, then the ledger.
+
+require_once __DIR__ . '/../config/db_connect.php'; // unified DB credentials (.env)
+
+// 1) Session + Auth
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../login.php'); exit();
+}
+$user_id   = (int)$_SESSION['user_id'];
+$user_role = $_SESSION['user_role'] ?? '';
+
+$current_page = 'dashboard';
+require_once __DIR__ . '/../utils/timezone_helper.php';
+// utils/money.php is newer than this page's previous version, so a production copy
+// may not have it yet. Requiring it unconditionally would turn "dashboard uploaded"
+// into "dashboard fatals"; money_symbol() is small enough to carry a local fallback.
+if (is_file(__DIR__ . '/../utils/money.php')) {
+    require_once __DIR__ . '/../utils/money.php';
+}
+if (!function_exists('money_symbol')) {
+    function money_symbol($code) {
+        static $m = ['USD'=>'$','EUR'=>'€','GBP'=>'£','MWK'=>'MK','ZAR'=>'R','KES'=>'KSh','TZS'=>'TSh'];
+        $code = strtoupper(trim((string)$code));
+        return $m[$code] ?? ($code !== '' ? $code . ' ' : '');
+    }
+}
+$admin_timezone = getUserTimezone(); // Get admin's timezone from session
+
+// 2) DB
+// config/db_connect.php already built a pooled connection; opening a second PDO by
+// hand (as this page used to) both doubled the connections and dropped DB_PORT out
+// of the DSN, so any host not on 3306 failed here and nowhere else.
+try {
+    $pdo = getDbConnection();
+    // Every window on this page is computed in PHP as a UTC instant. payments.payment_date
+    // is a TIMESTAMP, which MySQL renders in the *session* timezone, so those comparisons
+    // are only correct while the session is UTC. Pin it rather than hope the host is.
+    $pdo->exec("SET time_zone = '+00:00'");
+} catch (Throwable $e) {
+    error_log('admin_dashboard DB error: ' . $e->getMessage());
+    http_response_code(503);
+    die('The dashboard is temporarily unavailable. Please try again shortly.');
+}
+
+// 3) Authorize as Admin (role OR in admin_details)
+$is_admin = false;
+if ($user_role === 'Administrator') {
+    $is_admin = true;
+} else {
+    $stmt = $pdo->prepare("SELECT admin_role FROM admin_details WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $row = $stmt->fetch();
+    if ($row && in_array($row['admin_role'], ['Super Admin','Admin','Academic Coordinator'], true)) {
+        $is_admin = true;
+    }
+}
+if (!$is_admin) {
+    header('Location: ../login.php'); exit();
+}
+
+if (!function_exists('h')) {
+    function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+}
+if (!function_exists('get_setting')) {
+    function get_setting(PDO $pdo, string $key, $default = null) {
+        $s = $pdo->prepare("SELECT `value` FROM app_settings WHERE `key` = ?");
+        $s->execute([$key]);
+        $v = $s->fetchColumn();
+        return ($v === false || $v === null) ? $default : $v;
+    }
+}
+if (!function_exists('plural')) {
+    /** "1 rating" / "2 ratings" — the old page always said "1 ratings". */
+    function plural(int $n, string $one, ?string $many = null): string {
+        return $n . ' ' . ($n === 1 ? $one : ($many ?? $one . 's'));
+    }
+}
+
+// 4) Currency — the platform currency lives in app_settings, written by admin_settings.php.
+// This page used to hardcode USD, so a GBP platform read "$110.00" on every figure.
+$currency_code = strtoupper(substr(trim((string)get_setting($pdo, 'org.default_currency', 'USD')), 0, 3)) ?: 'USD';
+$C = money_symbol($currency_code);
+$money = fn($v) => $C . number_format((float)$v, 2);
+
+// 5) Time windows. Everything stored is a UTC instant; the admin reads the page in
+// their own zone, so each boundary is built locally and converted once.
+$adminTz = new DateTimeZone($admin_timezone);
+
+$todayStart_local     = new DateTime('today 00:00:00', $adminTz);
+$todayStart_utc       = localToUtc($todayStart_local->format('Y-m-d H:i:s'), $admin_timezone);
+$tomorrow_utc         = (clone $todayStart_utc)->modify('+1 day');
+$monthStart_local     = new DateTime('first day of this month 00:00:00', $adminTz);
+$monthStart_utc       = localToUtc($monthStart_local->format('Y-m-d H:i:s'), $admin_timezone);
+$lastMonthStart_local = (clone $monthStart_local)->modify('-1 month');
+$lastMonthStart_utc   = localToUtc($lastMonthStart_local->format('Y-m-d H:i:s'), $admin_timezone);
+$yearAgo_local        = (clone $monthStart_local)->modify('-11 months');
+$yearAgo_utc          = localToUtc($yearAgo_local->format('Y-m-d H:i:s'), $admin_timezone);
+$weekStart_local      = (clone $todayStart_local)->modify('-6 days');
+$weekStart_utc        = localToUtc($weekStart_local->format('Y-m-d H:i:s'), $admin_timezone);
+$month30_local        = (clone $todayStart_local)->modify('-30 days');
+$month30_utc          = localToUtc($month30_local->format('Y-m-d H:i:s'), $admin_timezone);
+
+$FMT       = 'Y-m-d H:i:s';
+$nowUtcStr = getNowUtc()->format($FMT);
+$nowLocal  = getNowLocal($admin_timezone);
+
+// 6) KPIs
+
+// Revenue. Only Completed money is revenue; Pending is a queue, not income.
+$total_revenue = (float)$pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='Completed'")->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='Completed' AND payment_date >= ?");
+$stmt->execute([$monthStart_utc->format($FMT)]);
+$revenue_month = (float)$stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='Completed' AND payment_date >= ? AND payment_date < ?");
+$stmt->execute([$lastMonthStart_utc->format($FMT), $monthStart_utc->format($FMT)]);
+$revenue_last_month = (float)$stmt->fetchColumn();
+
+$revenue_delta_pct = $revenue_last_month > 0
+    ? (($revenue_month - $revenue_last_month) / $revenue_last_month) * 100
+    : null;
+
+// Pending payments (count + amount)
+$row = $pdo->query("SELECT COUNT(*) c, COALESCE(SUM(amount),0) s FROM payments WHERE status='Pending'")->fetch();
+$pending_count  = (int)$row['c'];
+$pending_amount = (float)$row['s'];
+
+// Students. "Active students" used to mean "has an Active row in student_packages",
+// which reads 1 on a platform with 34 active student accounts, because packages are
+// barely used. Taught-in-the-last-30-days is the number an admin actually wants; the
+// package figure is kept alongside it rather than passed off as the same thing.
+$stmt = $pdo->prepare("
+  SELECT COUNT(DISTINCT student_id) FROM lessons
+  WHERE student_id IS NOT NULL
+    AND status IN ('Scheduled','InProgress','Completed')
+    AND scheduled_start_time >= ? AND scheduled_start_time < ?
+");
+$stmt->execute([$month30_utc->format($FMT), $tomorrow_utc->format($FMT)]);
+$students_taught_30d = (int)$stmt->fetchColumn();
+
+$students_total  = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='Student' AND is_active=1")->fetchColumn();
+$students_on_pkg = (int)$pdo->query("SELECT COUNT(DISTINCT student_id) FROM student_packages WHERE status='Active'")->fetchColumn();
+$active_tutors   = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='Tutor' AND is_active=1")->fetchColumn();
+
+$stmt = $pdo->prepare("
+  SELECT COUNT(DISTINCT tutor_id) FROM lessons
+  WHERE status IN ('Scheduled','InProgress','Completed')
+    AND scheduled_start_time >= ? AND scheduled_start_time < ?
+");
+$stmt->execute([$weekStart_utc->format($FMT), $tomorrow_utc->format($FMT)]);
+$tutors_teaching_7d = (int)$stmt->fetchColumn();
+
+// Today's lessons, split by outcome. The headline number used to be every row
+// scheduled for today, cancellations included, sitting beside a "Completed" figure
+// it did not reconcile with.
+$stmt = $pdo->prepare("
+  SELECT status, COUNT(*) c FROM lessons
+  WHERE scheduled_start_time >= ? AND scheduled_start_time < ?
+  GROUP BY status
+");
+$stmt->execute([$todayStart_utc->format($FMT), $tomorrow_utc->format($FMT)]);
+$today_by_status = [];
+foreach ($stmt as $r) { $today_by_status[$r['status']] = (int)$r['c']; }
+$today_completed  = $today_by_status['Completed'] ?? 0;
+$today_inprogress = $today_by_status['InProgress'] ?? 0;
+$today_scheduled  = $today_by_status['Scheduled'] ?? 0;
+$today_noshow     = $today_by_status['NoShow'] ?? 0;
+$today_cancelled  = ($today_by_status['CancelledByTutor'] ?? 0) + ($today_by_status['CancelledByStudent'] ?? 0);
+$lessons_today    = $today_completed + $today_inprogress + $today_scheduled + $today_noshow;
+
+// New signups this week
+$stmt = $pdo->prepare("SELECT role, COUNT(*) c FROM users WHERE created_at >= ? GROUP BY role");
+$stmt->execute([$weekStart_utc->format($FMT)]);
+$signups_7d = ['Student' => 0, 'Tutor' => 0];
+foreach ($stmt as $r) { $signups_7d[$r['role']] = (int)$r['c']; }
+
+// 7) The backlog rail — the queues that quietly grow when nobody looks at them.
+$q1 = function (string $sql, array $args = []) use ($pdo): int {
+    $s = $pdo->prepare($sql);
+    $s->execute($args);
+    return (int)$s->fetchColumn();
+};
+
+// Ended with the student present but no outcome recorded. Same definition the tutor
+// dashboard uses; utils/lesson_sweep.php deliberately never auto-closes these,
+// because only the tutor can say what happened and the outcome drives their pay.
+$needs_finishing = $q1("SELECT COUNT(*) FROM lessons
+    WHERE status IN ('Scheduled','InProgress') AND scheduled_end_time < ? AND student_join_time IS NOT NULL", [$nowUtcStr]);
+// Past their end time and never touched at all.
+$stale_lessons   = $q1("SELECT COUNT(*) FROM lessons
+    WHERE status IN ('Scheduled','InProgress') AND scheduled_end_time < ? AND student_join_time IS NULL", [$nowUtcStr]);
+$open_catchups   = $q1("SELECT COUNT(*) FROM catchup_requests WHERE status='Open'");
+$qc_outstanding  = $q1("SELECT COUNT(*) FROM quality_control_assignments WHERE status IN ('Assigned','InReview')");
+$qc_overdue      = $q1("SELECT COUNT(*) FROM quality_control_assignments WHERE status IN ('Assigned','InReview') AND due_at < ?", [$nowUtcStr]);
+$ungraded_hw     = $q1("SELECT COUNT(*) FROM homework_submissions WHERE status <> 'Graded'");
+$rec_pending     = $q1("SELECT COUNT(*) FROM lesson_recordings WHERE status='Pending'");
+$rec_failed      = $q1("SELECT COUNT(*) FROM lesson_recordings WHERE status='Failed'");
+$unread_msgs     = $q1("SELECT COUNT(*) FROM messages m JOIN users u ON u.id = m.receiver_id
+    WHERE m.is_read = 0 AND u.role = 'Administrator'");
+$pkg_expiring    = $q1("SELECT COUNT(*) FROM student_packages
+    WHERE status='Active' AND end_date >= CURDATE() AND end_date <= CURDATE() + INTERVAL 14 DAY");
+$pkg_low         = $q1("SELECT COUNT(*) FROM student_packages WHERE status='Active' AND lessons_remaining <= 2");
+
+$attention = [];
+$push = function (string $label, int $n, string $href, string $tone, string $hint = '') use (&$attention) {
+    if ($n > 0) { $attention[] = ['label' => $label, 'n' => $n, 'href' => $href, 'tone' => $tone, 'hint' => $hint]; }
+};
+$push('Lessons need finishing', $needs_finishing, 'admin_lessons.php?time=past&status=Scheduled', 'amber',  'student attended, no outcome recorded');
+$push('Stale lessons',          $stale_lessons,   'admin_lessons.php?time=past&status=Scheduled', 'amber',  'past their end time, never closed');
+$push('Open catch-up requests', $open_catchups,   'admin_lessons.php?time=past&status=NoShow',    'rose',   'make-ups owed, none scheduled');
+$push('QC reviews outstanding', $qc_outstanding,  'qc_assignment.php',                            $qc_overdue > 0 ? 'rose' : 'sky',
+      $qc_overdue > 0 ? plural($qc_overdue, 'is', 'are') . ' overdue' : 'assigned, not yet completed');
+$push('Payments pending',       $pending_count,   'admin_revenue.php?view=payments&status=Pending',                  'violet', $money($pending_amount) . ' unconfirmed');
+$push('Homework ungraded',      $ungraded_hw,     'admin_revenue.php?view=analytics',                'sky',    'tutors grade these');
+$push('Recordings not ready',   $rec_pending,     'recordings.php',                               'slate',  'still processing');
+$push('Recordings failed',      $rec_failed,      'recordings.php',                               'rose',   'will not appear for students');
+$push('Unread admin messages',  $unread_msgs,     'admin_messaging_notifications.php',            'sky',    '');
+$push('Packages expiring',      $pkg_expiring,    'admin_revenue.php?view=packages&flag=expiring',                  'violet', 'within 14 days');
+$push('Packages nearly used up',$pkg_low,         'admin_revenue.php?view=packages&flag=low',                  'violet', '2 lessons or fewer left');
+
+$TONES = [
+  'rose'   => ['ring-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20',       'text-rose-300'],
+  'amber'  => ['ring-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20',    'text-amber-300'],
+  'violet' => ['ring-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20', 'text-violet-300'],
+  'sky'    => ['ring-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20',          'text-sky-300'],
+  'slate'  => ['ring-gray-600/50 bg-gray-800/60 hover:bg-gray-700/60',       'text-gray-300'],
+];
+
+// 8) Today's schedule.
+// LEFT JOIN on the student: 25 lessons carry no student_id (demos), and the old
+// INNER JOIN silently dropped every one of them out of the upcoming list.
+$SCHEDULE_COLS = "
+  l.id, l.scheduled_start_time, l.scheduled_end_time, l.status, l.lesson_type,
+  s.name AS subject_name,
+  tu.first_name AS t_first, tu.last_name AS t_last,
+  su.first_name AS s_first, su.last_name AS s_last";
+$SCHEDULE_FROM = "
+  FROM lessons l
+  JOIN subjects s    ON s.id  = l.subject_id
+  JOIN users tu      ON tu.id = l.tutor_id
+  LEFT JOIN users su ON su.id = l.student_id";
+
+$stmt = $pdo->prepare("SELECT $SCHEDULE_COLS $SCHEDULE_FROM
+  WHERE l.scheduled_start_time >= ? AND l.scheduled_start_time < ?
+  ORDER BY l.scheduled_start_time ASC LIMIT 8");
+$stmt->execute([$todayStart_utc->format($FMT), $tomorrow_utc->format($FMT)]);
+$schedule_lessons = $stmt->fetchAll();
+
+// An empty "today" is the common case out of term, and an empty card is a wasted
+// third of the page. Fall back to what is next, then to what happened last, so the
+// panel always says something about the teaching.
+$schedule_mode = 'today';
+if (empty($schedule_lessons)) {
+    $schedule_mode = 'next';
+    $stmt = $pdo->prepare("SELECT $SCHEDULE_COLS $SCHEDULE_FROM
+      WHERE l.scheduled_start_time >= ? AND l.status IN ('Scheduled','InProgress')
+      ORDER BY l.scheduled_start_time ASC LIMIT 8");
+    $stmt->execute([$nowUtcStr]);
+    $schedule_lessons = $stmt->fetchAll();
+}
+if (empty($schedule_lessons)) {
+    $schedule_mode = 'recent';
+    $stmt = $pdo->prepare("SELECT $SCHEDULE_COLS $SCHEDULE_FROM
+      WHERE l.scheduled_start_time < ?
+      ORDER BY l.scheduled_start_time DESC LIMIT 8");
+    $stmt->execute([$nowUtcStr]);
+    $schedule_lessons = $stmt->fetchAll();
+}
+$schedule_is_today = ($schedule_mode === 'today');
+
+$SCHEDULE_TITLE = ['today' => 'Today&rsquo;s schedule', 'next' => 'Next up', 'recent' => 'Most recent lessons'][$schedule_mode];
+$SCHEDULE_NOTE  = [
+  'today'  => '',
+  'next'   => 'Nothing is scheduled today &mdash; showing what is coming next.',
+  'recent' => 'Nothing is scheduled from today onwards &mdash; showing the last lessons taught.',
+][$schedule_mode];
+$SCHEDULE_HREF  = [
+  'today'  => 'admin_lessons.php?view=day&date=' . rawurlencode($nowLocal->format('Y-m-d')),
+  'next'   => 'admin_lessons.php?time=future',
+  'recent' => 'admin_lessons.php?time=past',
+][$schedule_mode];
+
+// 9) Recent payments
+$recent_payments = $pdo->query("
+  SELECT p.id, p.amount, p.payment_date, p.payment_method, p.status,
+         u.first_name, u.last_name
+  FROM payments p
+  JOIN student_packages sp ON sp.id = p.student_package_id
+  JOIN users u ON u.id = sp.student_id
+  ORDER BY p.payment_date DESC
+  LIMIT 6
+")->fetchAll();
+
+// 10) Top tutors.
+// Ratings carry their own tutor_id; routing through lessons.tutor_id (as this used
+// to) credits a rating to whoever holds the lesson now, which is already wrong for
+// one row. A lone 5-star also used to outrank a tutor with 13 ratings, hence a floor.
+const TOP_TUTOR_MIN_RATINGS = 3;
+$stmt = $pdo->prepare("
+  SELECT u.id, u.first_name, u.last_name,
+         ROUND(AVG(r.rating),2) AS avg_rating,
+         COUNT(*) AS ratings_count
+  FROM lesson_ratings r
+  JOIN users u ON u.id = r.tutor_id AND u.role = 'Tutor'
+  GROUP BY u.id, u.first_name, u.last_name
+  HAVING ratings_count >= ?
+  ORDER BY avg_rating DESC, ratings_count DESC
+  LIMIT 5
+");
+$stmt->execute([TOP_TUTOR_MIN_RATINGS]);
+$top_tutors = $stmt->fetchAll();
+
+// 11) Revenue by month (last 12 months).
+// Bucketed in PHP against the admin's calendar. DATE_FORMAT() bucketed by the UTC
+// month, so payments in the first or last hours of a month landed in the wrong bar.
+$stmt = $pdo->prepare("SELECT payment_date, amount FROM payments WHERE status='Completed' AND payment_date >= ?");
+$stmt->execute([$yearAgo_utc->format($FMT)]);
+$rev_map = [];
+foreach ($stmt as $r) {
+    $ym = utcToLocal($r['payment_date'], $admin_timezone)->format('Y-m');
+    $rev_map[$ym] = ($rev_map[$ym] ?? 0) + (float)$r['amount'];
+}
+$rev_labels = []; $rev_values = [];
+$cursor = clone $yearAgo_local;
+for ($i = 0; $i < 12; $i++) {
+    $rev_labels[] = $cursor->format('M Y');
+    $rev_values[] = round($rev_map[$cursor->format('Y-m')] ?? 0, 2);
+    $cursor->modify('+1 month');
+}
+$rev_has_data = array_sum($rev_values) > 0;
+
+// 12) Lesson status breakdown (last 7 local days).
+// Same fix: GROUP BY DATE() bucketed by the UTC date while the labels were local
+// days, and the window opened at "6 days ago at this time", so the first bar was
+// always a partial day.
+$stmt = $pdo->prepare("SELECT scheduled_start_time, status FROM lessons
+  WHERE scheduled_start_time >= ? AND scheduled_start_time < ?");
+$stmt->execute([$weekStart_utc->format($FMT), $tomorrow_utc->format($FMT)]);
+$EMPTY_DAY = ['Scheduled' => 0, 'Completed' => 0, 'Cancelled' => 0, 'NoShow' => 0];
+$ls_map = [];
+foreach ($stmt as $r) {
+    $d = utcToLocal($r['scheduled_start_time'], $admin_timezone)->format('Y-m-d');
+    if (!isset($ls_map[$d])) { $ls_map[$d] = $EMPTY_DAY; }
+    switch ($r['status']) {
+        case 'Completed':          $ls_map[$d]['Completed']++; break;
+        case 'NoShow':             $ls_map[$d]['NoShow']++;    break;
+        case 'CancelledByTutor':
+        case 'CancelledByStudent': $ls_map[$d]['Cancelled']++; break;
+        default:                   $ls_map[$d]['Scheduled']++; break; // Scheduled + InProgress
+    }
+}
+$ls_labels = []; $ls_scheduled = []; $ls_completed = []; $ls_cancelled = []; $ls_noshow = [];
+$cursor = clone $weekStart_local;
+for ($i = 0; $i < 7; $i++) {
+    $v = $ls_map[$cursor->format('Y-m-d')] ?? $EMPTY_DAY;
+    $ls_labels[]    = $cursor->format('D j');
+    $ls_scheduled[] = $v['Scheduled'];
+    $ls_completed[] = $v['Completed'];
+    $ls_cancelled[] = $v['Cancelled'];
+    $ls_noshow[]    = $v['NoShow'];
+    $cursor->modify('+1 day');
+}
+$ls_has_data = (array_sum($ls_scheduled) + array_sum($ls_completed) + array_sum($ls_cancelled) + array_sum($ls_noshow)) > 0;
+
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="icon" type="image/png" href="../favicon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
+          integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ"
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #111827; color: #d1d5db; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1f2937; }
+    ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    .card { background-color: #0f1623; border: 1px solid rgba(255,255,255,.06); border-radius: .75rem; }
+    .rail { scrollbar-width: thin; }
+  </style>
+</head>
+<body class="flex min-h-screen">
+  <?php include 'admin_sidebar.php'; ?>
+
+  <main class="flex-1 bg-gray-800 p-5 lg:p-7 min-w-0">
+
+    <header class="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-white">Admin Dashboard</h2>
+        <p class="text-gray-400 text-sm mt-0.5">
+          <?php echo h($nowLocal->format('l, j F Y')); ?>
+          &middot; <span title="Every time on this page is shown in your timezone"><?php echo h($admin_timezone); ?></span>
+          &middot; <?php echo h($currency_code); ?>
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 hidden sm:inline">as of <?php echo h($nowLocal->format('g:i A')); ?></span>
+        <a href="admin_dashboard.php"
+           class="inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors">
+          <svg class="w-4 h-4" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-refresh-cw"></use></svg>
+          Refresh
+        </a>
+      </div>
+    </header>
+
+    <!-- Backlog rail: the queues that grow while nobody is watching. -->
+    <?php if ($attention): ?>
+      <section class="mb-5" aria-label="Needs attention">
+        <h3 class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-2">Needs attention</h3>
+        <div class="flex gap-3 overflow-x-auto pb-2 rail">
+          <?php foreach ($attention as $a):
+            [$boxCls, $numCls] = $TONES[$a['tone']] ?? $TONES['slate']; ?>
+            <a href="<?php echo h($a['href']); ?>"
+               class="flex-shrink-0 w-[10.5rem] px-4 py-3 rounded-xl ring-1 transition-colors <?php echo $boxCls; ?>">
+              <div class="text-2xl font-bold leading-none <?php echo $numCls; ?>"><?php echo (int)$a['n']; ?></div>
+              <div class="text-xs font-medium text-gray-200 mt-1.5 leading-snug"><?php echo h($a['label']); ?></div>
+              <?php if ($a['hint'] !== ''): ?>
+                <div class="text-[10px] text-gray-500 mt-0.5 leading-snug"><?php echo h($a['hint']); ?></div>
+              <?php endif; ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </section>
+    <?php else: ?>
+      <section class="mb-5">
+        <div class="card px-4 py-3 flex items-center gap-3">
+          <svg class="w-5 h-5 text-emerald-400" aria-hidden="true"><use href="../assets/icons/sprite.svg#i-check-circle"></use></svg>
+          <p class="text-sm text-gray-300">Nothing is waiting on you &mdash; every queue is clear.</p>
+        </div>
+      </section>
+    <?php endif; ?>
+
+    <!-- KPI strip -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
+
+      <a href="admin_lessons.php?view=day&amp;date=<?php echo h($nowLocal->format('Y-m-d')); ?>"
+         class="card p-5 block hover:ring-1 hover:ring-indigo-500/40 transition">
+        <p class="text-xs uppercase tracking-wide text-gray-500">Lessons today</p>
+        <p class="text-3xl font-bold text-white mt-1.5"><?php echo (int)$lessons_today; ?></p>
+        <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+          <span class="text-emerald-400"><?php echo (int)$today_completed; ?> done</span>
+          <?php if ($today_inprogress): ?> &middot; <span class="text-sky-400"><?php echo (int)$today_inprogress; ?> live</span><?php endif; ?>
+          &middot; <?php echo (int)$today_scheduled; ?> to go
+          <?php if ($today_cancelled || $today_noshow): ?>
+            <br><span class="text-rose-400"><?php echo (int)$today_cancelled; ?> cancelled &middot; <?php echo (int)$today_noshow; ?> no-show</span>
+          <?php endif; ?>
+        </p>
+      </a>
+
+      <a href="admin_users.php?role=Student" class="card p-5 block hover:ring-1 hover:ring-indigo-500/40 transition">
+        <p class="text-xs uppercase tracking-wide text-gray-500">Students taught (30d)</p>
+        <p class="text-3xl font-bold text-white mt-1.5"><?php echo (int)$students_taught_30d; ?></p>
+        <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+          of <?php echo (int)$students_total; ?> active accounts<br>
+          <?php echo h(plural($students_on_pkg, 'student')); ?> on a live package
+        </p>
+      </a>
+
+      <a href="admin_users.php?role=Tutor" class="card p-5 block hover:ring-1 hover:ring-indigo-500/40 transition">
+        <p class="text-xs uppercase tracking-wide text-gray-500">Active tutors</p>
+        <p class="text-3xl font-bold text-white mt-1.5"><?php echo (int)$active_tutors; ?></p>
+        <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+          <?php echo (int)$tutors_teaching_7d; ?> taught in the last 7 days<br>
+          <?php if ($signups_7d['Student'] || $signups_7d['Tutor']): ?>
+            <span class="text-emerald-400">+<?php echo (int)$signups_7d['Student']; ?> students, +<?php echo (int)$signups_7d['Tutor']; ?> tutors this week</span>
+          <?php else: ?>
+            no new signups this week
+          <?php endif; ?>
+        </p>
+      </a>
+
+      <a href="admin_revenue.php" class="card p-5 block hover:ring-1 hover:ring-indigo-500/40 transition">
+        <p class="text-xs uppercase tracking-wide text-gray-500">Revenue this month</p>
+        <p class="text-3xl font-bold text-white mt-1.5"><?php echo h($money($revenue_month)); ?></p>
+        <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+          <?php if ($revenue_delta_pct === null): ?>
+            no completed revenue last month
+          <?php else: $up = $revenue_delta_pct >= 0; ?>
+            <span class="<?php echo $up ? 'text-emerald-400' : 'text-rose-400'; ?>">
+              <?php echo $up ? '&#9650;' : '&#9660;'; ?> <?php echo number_format(abs($revenue_delta_pct), 0); ?>% vs last month
+            </span>
+          <?php endif; ?>
+          <br><?php echo h($money($total_revenue)); ?> all time
+        </p>
+      </a>
+    </div>
+
+    <!-- Schedule + top tutors -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+
+      <section class="card p-5 xl:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-semibold text-white"><?php echo $SCHEDULE_TITLE; ?></h3>
+          <a href="<?php echo h($SCHEDULE_HREF); ?>"
+             class="text-indigo-400 text-sm font-semibold hover:text-indigo-300">View all</a>
+        </div>
+
+        <?php if (empty($schedule_lessons)): ?>
+          <div class="py-10 text-center">
+            <p class="text-gray-400 text-sm">No lessons on the calendar.</p>
+            <a href="admin_lessons.php?view=calendar" class="text-indigo-400 text-sm font-semibold hover:text-indigo-300 mt-1 inline-block">Open the calendar</a>
+          </div>
+        <?php else: ?>
+          <?php if ($SCHEDULE_NOTE !== ''): ?>
+            <p class="text-xs text-gray-500 -mt-2 mb-3"><?php echo $SCHEDULE_NOTE; ?></p>
+          <?php endif; ?>
+          <div class="space-y-2">
+            <?php foreach ($schedule_lessons as $l):
+              $start = utcToLocal($l['scheduled_start_time'], $admin_timezone);
+              $end   = utcToLocal($l['scheduled_end_time'], $admin_timezone);
+              $studentName = trim(($l['s_first'] ?? '') . ' ' . ($l['s_last'] ?? ''));
+              // Demo lessons legitimately have no student; the old query dropped them.
+              if ($studentName === '') {
+                  $studentName = ($l['lesson_type'] === 'Demo') ? 'Demo &mdash; no student' : 'Unassigned';
+              }
+              // "Live now" is only true inside the lesson's own window. A lesson left
+              // InProgress two months ago is unfinished, not live, and calling it live
+              // is how the backlog stayed invisible.
+              $isOver = $l['scheduled_end_time'] < $nowUtcStr;
+              $chip = [
+                'Completed'          => ['Completed',            'bg-emerald-500/10 text-emerald-400'],
+                'InProgress'         => $isOver ? ['Unfinished', 'bg-amber-500/10 text-amber-400'] : ['Live now', 'bg-sky-500/10 text-sky-400'],
+                'Scheduled'          => $isOver ? ['Not closed', 'bg-amber-500/10 text-amber-400'] : ['Scheduled', 'bg-indigo-500/10 text-indigo-300'],
+                'NoShow'             => ['No-show',              'bg-rose-500/10 text-rose-400'],
+                'CancelledByTutor'   => ['Cancelled (tutor)',    'bg-gray-700 text-gray-300'],
+                'CancelledByStudent' => ['Cancelled (student)',  'bg-gray-700 text-gray-300'],
+              ][$l['status']] ?? [$l['status'], 'bg-gray-700 text-gray-300'];
+            ?>
+              <div class="flex items-center gap-4 bg-gray-800/60 px-4 py-3 rounded-lg">
+                <div class="w-24 flex-shrink-0">
+                  <p class="text-sm font-semibold text-white tabular-nums"><?php echo h($start->format('g:i A')); ?></p>
+                  <p class="text-[11px] text-gray-500 tabular-nums">
+                    <?php echo $schedule_is_today ? 'to ' . h($end->format('g:i A')) : h($start->format('D j M')); ?>
+                  </p>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-white truncate">
+                    <?php echo h($l['subject_name']); ?>
+                    <?php if ($l['lesson_type'] !== 'Regular'): ?>
+                      <span class="text-[10px] font-medium text-amber-300/90 ml-1"><?php echo h($l['lesson_type']); ?></span>
+                    <?php endif; ?>
+                  </p>
+                  <p class="text-xs text-gray-400 truncate">
+                    <?php echo h(trim($l['t_first'] . ' ' . $l['t_last'])); ?> &rarr; <?php echo $studentName === 'Demo &mdash; no student' ? $studentName : h($studentName); ?>
+                  </p>
+                </div>
+                <span class="text-[11px] font-medium py-1 px-2.5 rounded-full flex-shrink-0 <?php echo $chip[1]; ?>"><?php echo h($chip[0]); ?></span>
+                <a href="admin_lessons.php?view=day&amp;date=<?php echo h($start->format('Y-m-d')); ?>"
+                   class="text-indigo-400 text-xs font-semibold hover:text-indigo-300 flex-shrink-0">Open</a>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </section>
+
+      <section class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-semibold text-white">Top tutors</h3>
+          <span class="text-[10px] text-gray-500"><?php echo TOP_TUTOR_MIN_RATINGS; ?>+ ratings</span>
+        </div>
+        <div class="space-y-2">
+          <?php if (empty($top_tutors)): ?>
+            <p class="text-gray-400 text-sm py-6 text-center">
+              No tutor has <?php echo TOP_TUTOR_MIN_RATINGS; ?> ratings yet.
+            </p>
+          <?php else: foreach ($top_tutors as $i => $t): ?>
+            <div class="flex items-center gap-3 bg-gray-800/60 px-3 py-2.5 rounded-lg">
+              <span class="w-5 text-center text-xs font-bold text-gray-500 flex-shrink-0"><?php echo $i + 1; ?></span>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-white truncate"><?php echo h($t['first_name'] . ' ' . $t['last_name']); ?></p>
+                <p class="text-[11px] text-gray-500"><?php echo h(plural((int)$t['ratings_count'], 'rating')); ?></p>
+              </div>
+              <div class="text-indigo-400 font-bold text-sm flex-shrink-0 tabular-nums"><?php echo number_format((float)$t['avg_rating'], 2); ?>&#9733;</div>
+            </div>
+          <?php endforeach; endif; ?>
+        </div>
+      </section>
+    </div>
+
+    <!-- Trends -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
+      <section class="card p-5">
+        <h3 class="text-base font-semibold text-white mb-3">Revenue &middot; last 12 months</h3>
+        <div class="h-56 relative">
+          <canvas id="revChart"></canvas>
+          <?php if (!$rev_has_data): ?>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p class="text-sm text-gray-500 bg-[#0f1623]/85 px-3 py-1.5 rounded">No completed payments in this window.</p>
+            </div>
+          <?php endif; ?>
+        </div>
+      </section>
+
+      <section class="card p-5">
+        <h3 class="text-base font-semibold text-white mb-3">Lessons &middot; last 7 days</h3>
+        <div class="h-56 relative">
+          <canvas id="lessonsChart"></canvas>
+          <?php if (!$ls_has_data): ?>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p class="text-sm text-gray-500 bg-[#0f1623]/85 px-3 py-1.5 rounded">No lessons in this window.</p>
+            </div>
+          <?php endif; ?>
+        </div>
+      </section>
+    </div>
+
+    <!-- Ledger -->
+    <section class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-semibold text-white">Recent payments</h3>
+        <a href="admin_revenue.php?view=payments" class="text-indigo-400 text-sm font-semibold hover:text-indigo-300">View all</a>
+      </div>
+      <?php if (empty($recent_payments)): ?>
+        <p class="text-gray-400 text-sm py-6 text-center">No payments recorded yet.</p>
+      <?php else: ?>
+        <div class="space-y-2">
+          <?php foreach ($recent_payments as $p):
+            $dt = utcToLocal($p['payment_date'], $admin_timezone);
+            $statusBadge = [
+              'Completed' => 'bg-emerald-500/10 text-emerald-400',
+              'Pending'   => 'bg-amber-500/10 text-amber-400',
+              'Failed'    => 'bg-rose-500/10 text-rose-400',
+            ][$p['status']] ?? 'bg-gray-700 text-gray-300';
+            // payment_method is an enum, but the database is not in strict mode, so it
+            // can hold ''. That used to render as a bare "&middot;" with nothing before it.
+            $method = trim((string)$p['payment_method']) ?: 'Unrecorded';
+          ?>
+            <div class="flex items-center gap-4 bg-gray-800/60 px-4 py-3 rounded-lg">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-white truncate"><?php echo h($p['first_name'] . ' ' . $p['last_name']); ?></p>
+                <p class="text-xs text-gray-400"><?php echo h($method); ?> &middot; <?php echo h($dt->format('j M Y')); ?></p>
+              </div>
+              <div class="text-sm font-semibold text-white tabular-nums flex-shrink-0"><?php echo h($money($p['amount'])); ?></div>
+              <span class="text-[11px] font-medium py-1 px-2.5 rounded-full flex-shrink-0 <?php echo $statusBadge; ?>"><?php echo h($p['status']); ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </section>
+  </main>
+
+  <script>
+    const AXIS = '#9ca3af', GRID = 'rgba(255,255,255,0.07)';
+
+    (function () {
+      const el = document.getElementById('revChart');
+      if (!el || typeof Chart === 'undefined') return;
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: <?php echo json_encode($rev_labels); ?>,
+          datasets: [{
+            label: 'Completed revenue (<?php echo h($currency_code); ?>)',
+            data: <?php echo json_encode($rev_values); ?>,
+            backgroundColor: 'rgba(99, 102, 241, 0.65)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            // Without a suggested max, an all-zero series renders a 0.0–1.0 decimal axis.
+            y: { beginAtZero: true, suggestedMax: <?php echo $rev_has_data ? 'undefined' : '10'; ?>,
+                 ticks: { color: AXIS, precision: 0 }, grid: { color: GRID } },
+            x: { ticks: { color: AXIS, maxRotation: 0, autoSkipPadding: 12 }, grid: { display: false } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (c) => <?php echo json_encode($C); ?> + Number(c.parsed.y).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              }
+            }
+          }
+        }
+      });
+    })();
+
+    (function () {
+      const el = document.getElementById('lessonsChart');
+      if (!el || typeof Chart === 'undefined') return;
+      const ds = [
+        { label: 'Scheduled', data: <?php echo json_encode($ls_scheduled); ?> },
+        { label: 'Completed', data: <?php echo json_encode($ls_completed); ?> },
+        { label: 'Cancelled', data: <?php echo json_encode($ls_cancelled); ?> },
+        { label: 'No-show',   data: <?php echo json_encode($ls_noshow); ?> }
+      ];
+      const fill = ['rgba(139,92,246,0.75)', 'rgba(16,185,129,0.75)', 'rgba(234,179,8,0.75)', 'rgba(239,68,68,0.75)'];
+      const line = ['rgba(139,92,246,1)', 'rgba(16,185,129,1)', 'rgba(234,179,8,1)', 'rgba(239,68,68,1)'];
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: <?php echo json_encode($ls_labels); ?>,
+          datasets: ds.map((d, i) => ({ ...d, backgroundColor: fill[i], borderColor: line[i], borderWidth: 1, borderRadius: 4 }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, ticks: { color: AXIS }, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, ticks: { color: AXIS, precision: 0 }, grid: { color: GRID } }
+          },
+          plugins: { legend: { labels: { color: '#e5e7eb', boxWidth: 12, usePointStyle: true, pointStyle: 'circle' } } }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

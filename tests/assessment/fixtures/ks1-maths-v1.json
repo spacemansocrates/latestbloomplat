@@ -1,0 +1,93 @@
+{
+  "id": "ks1-maths",
+  "version": 1,
+  "subject": "maths",
+  "stage": "KS1",
+  "years": [1, 2],
+  "title": "KS1 Maths diagnostic (test fixture)",
+  "minutes": 20,
+  "curriculum": "National Curriculum in England, KS1 mathematics (test fixture only, not a real assessment)",
+  "intro": "Your tutor will read each question with you & help you start.",
+  "bands": { "strong": 75, "developing": 40 },
+  "skills": [
+    {
+      "id": "place_value",
+      "name": "Counting and place value",
+      "why": "Knowing what each digit is worth is the base for every other part of maths.",
+      "strong": "{name} counts confidently and knows what each digit in a number is worth.",
+      "developing": "{name} counts well but is still unsure what the tens digit is worth.",
+      "gap": "{name} is not yet secure counting past 20. This holds up adding and taking away, so it is worth fixing now.",
+      "next_step": "We will use counting games and number lines until it feels easy."
+    },
+    {
+      "id": "add_sub",
+      "name": "Adding and taking away",
+      "why": "Quick, accurate adding and taking away makes every later topic lighter work.",
+      "strong": "{name} adds and takes away accurately, even with bigger numbers.",
+      "developing": "{name} adds small numbers well but slows down when crossing ten.",
+      "gap": "{name} is finding adding and taking away tricky at the moment. Most of maths builds on this, so it comes first.",
+      "next_step": "We will build number bonds to 10 and 20 with lots of short practice."
+    },
+    {
+      "id": "mult_div",
+      "name": "Times tables and sharing",
+      "why": "Times tables unlock fractions, division and a lot of problem solving later.",
+      "strong": "{name} already knows the 2, 5 and 10 times tables well.",
+      "developing": "{name} understands groups of things but does not know the tables by heart yet.",
+      "gap": "{name} is not yet confident with groups and times tables. These come up again and again, so they are worth practising now.",
+      "next_step": "We will learn the 2, 5 and 10 times tables with patterns and games."
+    },
+    {
+      "id": "measure",
+      "name": "Measuring and money",
+      "why": "Measuring and money connect maths to everyday life, which builds confidence.",
+      "strong": "{name} compares lengths and works with money confidently.",
+      "developing": "{name} compares lengths well but is less sure with money.",
+      "gap": "{name} is not yet sure how to compare lengths or count money. These are everyday skills, so they are worth securing.",
+      "next_step": "We will measure real objects and count real coins together."
+    }
+  ],
+  "passages": [],
+  "questions": [
+    { "id": "q01", "skill": "place_value", "difficulty": 1, "type": "mcq", "marks": 1, "ref": "Y1 count to 100",
+      "stem": "Which number is 1 more than 19?", "options": ["18", "20", "29", "10"], "answer": 1,
+      "explain": "19 + 1 = 20." },
+    { "id": "q02", "skill": "add_sub", "difficulty": 1, "type": "numeric", "marks": 1, "ref": "Y1 add within 20",
+      "stem": "What is 7 + 5?", "answer": 12,
+      "explain": "7 + 3 = 10, then 2 more makes 12." },
+    { "id": "q03", "skill": "mult_div", "difficulty": 1, "type": "mcq", "marks": 1, "ref": "Y1 groups",
+      "stem": "Which of these is the same as 2 groups of 5?", "options": ["5 + 5", "2 + 5", "5 - 2", "2 + 2"], "answer": 0,
+      "explain": "2 groups of 5 is 5 + 5." },
+    { "id": "q04", "skill": "measure", "difficulty": 2, "type": "mcq", "marks": 1, "ref": "Y1 compare lengths",
+      "stem": "Which is the longest?", "options": ["10 cm", "50 cm", "90 cm", "1 metre"], "answer": 3,
+      "explain": "1 metre is 100 cm, which is longer than 90 cm." },
+    { "id": "q05", "skill": "place_value", "difficulty": 2, "type": "short", "marks": 1, "ref": "Y1 numbers in words",
+      "stem": "Write the number 15 in words.", "answer": ["fifteen"],
+      "explain": "Accept any capitalisation." },
+    { "id": "q06", "skill": "add_sub", "difficulty": 3, "type": "numeric", "marks": 1, "ref": "Y1 subtraction problems",
+      "stem": "Sam has 14 sweets. He eats 6. How many sweets are left?", "answer": 8,
+      "explain": "14 - 6 = 8." },
+    { "id": "q07", "skill": "mult_div", "difficulty": 3, "type": "numeric", "marks": 1, "ref": "Y2 5 times table",
+      "stem": "What is 3 × 5?", "answer": 15,
+      "explain": "3 lots of 5 is 15." },
+    { "id": "q08", "skill": "measure", "difficulty": 3, "type": "numeric", "marks": 1, "ref": "Y2 money",
+      "stem": "How many pence are there in £1?", "answer": 100, "unit": "p",
+      "explain": "£1 = 100p." },
+    { "id": "q09", "skill": "place_value", "difficulty": 4, "type": "mcq", "marks": 1, "ref": "Y2 place value",
+      "stem": "What is the 4 worth in the number 47?", "options": ["4", "40", "47", "400"], "answer": 1,
+      "explain": "The 4 is in the tens place, so it is worth 40." },
+    { "id": "q10", "skill": "add_sub", "difficulty": 4, "type": "mcq", "marks": 1, "ref": "Y2 add and subtract",
+      "stem": "Which number sentence is true?", "options": ["23 + 10 = 13", "35 - 5 = 25", "16 + 4 = 20", "40 - 20 = 60"], "answer": 2,
+      "explain": "16 + 4 = 20. The others mix up adding and taking away, or tens and ones." },
+    { "id": "q11", "skill": "mult_div", "difficulty": 5, "type": "multi", "marks": 2, "ref": "Y2 multiples of 5",
+      "stem": "Which of these numbers are in the 5 times table?", "options": ["15", "22", "30", "41"], "answer": [0, 2],
+      "explain": "Multiples of 5 end in 0 or 5: 15 and 30." },
+    { "id": "q12", "skill": "measure", "difficulty": 4, "type": "written", "marks": 2, "ref": "Y2 compare and measure length",
+      "stem": "You have two pencils. Explain how you would find out which one is longer.",
+      "rubric": [
+        { "marks": 1, "criterion": "Says to line them up side by side, starting at the same point" },
+        { "marks": 1, "criterion": "Mentions measuring each one with a ruler, in centimetres" }
+      ],
+      "explain": "Either method on its own earns 1 mark." }
+  ]
+}

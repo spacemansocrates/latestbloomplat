@@ -1,0 +1,13 @@
+migrations/2026_09_13_classroom_book_state.sql
+integrations/file_storage.php
+api/lesson_books.php
+assets/livekit/vendor/room-utilities.css
+assets/livekit/books.css
+assets/livekit/views.js
+assets/livekit/book_sync.js
+assets/livekit/books.js
+assets/livekit/whiteboard.js
+assets/livekit/room.js
+assets/livekit/recorder.js
+components/lesson_book_pane.php
+components/lesson_room_live_shell.php

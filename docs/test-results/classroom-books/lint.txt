@@ -1,0 +1,20 @@
+﻿No syntax errors detected in api/lesson_books.php
+No syntax errors detected in integrations/file_storage.php
+No syntax errors detected in components/lesson_book_pane.php
+No syntax errors detected in components/lesson_room_live_shell.php
+No syntax errors detected in tests/classroom/prepare.php
+No syntax errors detected in tests/classroom/prepare_app.php
+No syntax errors detected in tests/classroom/pdf_fixture.php
+No syntax errors detected in tests/classroom/test_books_http.php
+No syntax errors detected in tests/classroom/harness_books.php
+No syntax errors detected in tests/classroom/run.php
+No syntax errors detected in tests/whatsapp/run.php
+PASS JavaScript syntax: assets/livekit/books.js
+PASS JavaScript syntax: assets/livekit/book_sync.js
+PASS JavaScript syntax: assets/livekit/views.js
+PASS JavaScript syntax: assets/livekit/room.js
+PASS JavaScript syntax: assets/livekit/whiteboard.js
+PASS JavaScript syntax: assets/livekit/recorder.js
+PASS JavaScript syntax: tests/classroom/browser_books.mjs
+PASS JavaScript syntax: tests/classroom/browser_board.mjs
+PASS JavaScript syntax: tests/classroom/test_book_sync.mjs

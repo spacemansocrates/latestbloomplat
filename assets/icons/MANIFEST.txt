@@ -1,0 +1,98 @@
+# Bloom portal icon set
+# lucide-static v1.40.0, ISC licence, see LICENSE
+# Downloaded 2026-09-03. Pinned on purpose: do not switch to @latest,
+# because upstream redraws would change the UI with no code change.
+
+activity               in use today
+alarm-clock            in use today
+alert-circle           in use today
+arrow-right            in use today
+award                  in use today
+bell                   in use today
+book                   material type: Book
+book-open              in use today
+book-open-check        in use today
+briefcase              in use today
+calendar               in use today
+calendar-clock         in use today
+calendar-range         in use today
+camera                 in use today
+camera-off             in use today
+check                  in use today
+check-check            in use today
+check-circle           in use today
+chevron-down           in use today
+chevron-left           in use today
+chevron-right          in use today
+clapperboard           in use today
+clipboard-check        in use today
+clock                  in use today
+clock-8                in use today
+copy                   in use today
+credit-card            in use today
+dollar-sign            in use today
+download               in use today
+edit-3                 in use today
+external-link          in use today
+eye                    in use today
+file                   material type: Other
+file-down              in use today
+file-pen               material type: Worksheet
+file-text              in use today
+film                   material type: Video
+filter                 in use today
+graduation-cap         in use today
+hard-drive             in use today
+hash                   in use today
+headphones             material type: Audio
+info                   in use today
+layout-dashboard       in use today
+layout-grid            in use today
+lightbulb              in use today
+list                   in use today
+loader-2               in use today
+lock                   in use today
+log-out                in use today
+menu                   in use today
+message-square         in use today
+mic                    lesson room: mute / unmute (was hand-drawn)
+minus                  in use today
+moon                   in use today
+notebook-pen           in use today
+package                in use today
+pencil                 in use today
+play                   in use today
+plus                   in use today
+pound-sterling         amounts, replacing dollar-sign
+presentation           material type: PPT
+receipt                next payment / invoice (was hand-drawn)
+route                  in use today
+screen-share           lesson room: share screen (was hand-drawn)
+scroll-text            material type: PastPaper
+search                 in use today
+send                   in use today
+settings               in use today
+share-2                in use today
+star                   in use today
+tag                    in use today
+trash-2                in use today
+upload                 file pickers and drag-drop areas (was hand-drawn)
+user                   in use today
+user-check             in use today
+users                  in use today
+video                  in use today
+video-off              in use today
+wallet                 in use today
+x                      in use today
+x-circle               in use today
+pause-circle           banner active/paused toggle (dynamic name)
+play-circle            banner active/paused toggle (dynamic name)
+sun                    light mode, theme toggle (created in JS)
+mail                   login form (was hand-drawn)
+eye-off                login form (was hand-drawn)
+mic-off                lesson room toolbar (was hand-drawn)
+screen-share-off       lesson room toolbar (was hand-drawn)
+phone-off              lesson room toolbar (was hand-drawn)
+volume-2               lesson room toolbar (was hand-drawn)
+refresh-cw             student availability: reload catch-ups (was hand-drawn)
+calendar-days          student availability: specific-dates tab (was hand-drawn)

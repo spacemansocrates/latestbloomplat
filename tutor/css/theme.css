@@ -1,0 +1,744 @@
+/* ====================================
+   #GLOBAL VARIABLES & THEMING
+   ==================================== */
+:root {
+    /* Dark Theme Colors */
+    --ks-dark-bg-main: #262626;
+    --ks-dark-bg-card: #2A2A2A;
+    --ks-dark-text-primary: #f3f4f6;
+    --ks-dark-text-secondary: #9ca3af;
+    --ks-dark-text-muted: #6b7280;
+    --ks-dark-shadow-base: #000000;
+    --ks-dark-card-bg: #ffffff0d;
+    --ks-dark-card-text: #e5e7eb;
+
+    /* Light Theme Colors */
+    --ks-bg: #f7f7fb;
+    --ks-surface: #ffffff;
+    --ks-text: #374151;
+    --ks-heading: #111827;
+    --ks-border: #e5e7eb;
+    --ks-light-card-bg: #ffffff;
+    --ks-light-card-text: #111827;
+
+    /* Brand Colors */
+    --ks-accent: #6366f1;
+    /* Indigo 600 */
+    --ks-highlight: #fbbf24;
+    /* Amber 400 */
+
+    /* Status Colors */
+    --ks-success: #10b981;
+    --ks-warning: #f59e0b;
+    --ks-error: #ef4444;
+    --ks-info: #3b82f6;
+
+    /* Spacing & Sizing */
+    --ks-radius-sm: 0.25rem;
+    --ks-radius-md: 0.5rem;
+    --ks-radius-lg: 0.75rem;
+    --ks-radius-xl: 1rem;
+    --ks-radius-2xl: 1.5rem;
+    --ks-radius-full: 9999px;
+
+    /* Shadows */
+    --ks-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --ks-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --ks-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ====================================
+   #BASE STYLES
+   ==================================== */
+body {
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.theme-light {
+    background: var(--ks-bg);
+    color: var(--ks-text);
+}
+
+body:not(.theme-light) {
+    background: var(--ks-dark-bg-main);
+    color: var(--ks-dark-text-primary);
+}
+
+/* ====================================
+   #SIDENAR & MAIN
+   ==================================== */
+.theme-light aside {
+    background-color: #ffffff;
+    border-right: 1px solid var(--ks-border);
+}
+
+.theme-light main {
+    background-color: var(--ks-bg);
+}
+
+body:not(.theme-light) aside {
+    background-color: #111827;
+}
+
+body:not(.theme-light) main {
+    background-color: transparent;
+}
+
+/* ====================================
+   #CARDS
+   ==================================== */
+.card-base {
+    border-radius: var(--ks-radius-lg);
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+
+}
+
+.card-base-sub {
+    background: #f3f3f3;
+}
+
+
+.theme-light .card-base {
+    background-color: var(--ks-surface);
+    border: 1px solid var(--ks-border);
+}
+
+.theme-light .card-base-sub {
+    background-color: var(--ks-surface);
+    border: 1px solid var(--ks-border);
+    color: var(--ks-light-card-text);
+}
+
+body:not(.theme-light) .card-base {
+    background: var(--ks-dark-card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body:not(.theme-light) .card-base-sub {
+    background: var(--ks-dark-bg-main);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+/* ====================================
+   #INPUTS
+   ==================================== */
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.theme-light .form-input {
+    background-color: #ffffff;
+    border: 1px solid var(--ks-border);
+    color: var(--ks-light-card-text);
+}
+
+body:not(.theme-light) .form-input {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    color: #f3f4f6;
+}
+
+/* ====================================
+   #Input-field Styles
+   ==================================== */
+.search-container {
+    position: relative;
+    width: 100%;
+    max-width: 28rem;
+}
+
+.input-field {
+    width: 100%;
+    padding: 0.625rem 2.5rem 0.625rem 2.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: #fff;
+    color: var(--ks-light-card-text);
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+}
+
+/* Dark mode styles */
+body:not(.theme-light) .input-field {
+    background: var(--ks-dark-card-bg);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+
+/* Focus state */
+.input-field:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5);
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+body:not(.theme-light) .input-field:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* icon -field*/
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    pointer-events: none;
+}
+
+/* Placeholder text */
+.input-field::placeholder {
+    color: #6b7280;
+    opacity: 0.8;
+}
+
+body:not(.theme-light) .input-field::placeholder {
+    color: #9ca3af;
+}
+
+/* ====================================
+   #UI Buttons
+   ==================================== */
+.ui-button {
+    height: 2.5rem;
+    width: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(209, 213, 219, 1);
+    background-color: rgba(255, 255, 255, 0.9);
+    color: rgb(51, 65, 85);
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    outline: none;
+}
+
+.theme-light .ui-button {
+    border: 1px solid var(--ks-border);
+    background-color: #ffffff;
+    color: #374151;
+}
+
+/* Dark mode styles */
+body:not(.theme-light) .ui-button {
+    border-color: rgba(55, 65, 81, 1);
+    background-color: rgba(31, 41, 55, 0.5);
+    color: rgba(209, 213, 219, 1);
+}
+
+/* Hover states */
+.ui-button:hover {
+    background-color: rgba(243, 244, 246, 0.8);
+}
+
+body:not(.theme-light) .ui-button:hover {
+    background-color: rgba(55, 65, 81, 0.8);
+}
+
+/* Theme toggle styles */
+.ui-button.theme-toggle {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    width: auto;
+    height: auto;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+}
+
+/* Ensure the icon inside the button is sized correctly */
+.ui-button.theme-toggle i,
+.ui-button.theme-toggle svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+/* Dark mode theme toggle */
+body:not(.theme-light) .ui-button.theme-toggle {
+    color: rgb(250, 204, 21);
+    /* yellow-400 */
+}
+
+/* Notification badge */
+.ui-notification-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    background-color: rgb(220, 38, 38);
+    /* red-600. red-500 put white text at 3.8:1, under the 4.5 this size needs. */
+    color: white;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    border-radius: 9999px;
+    height: 1.25rem;
+    width: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ====================================
+   #UTILITIES
+   ==================================== */
+.text-primary {
+    color: var(--ks-text);
+}
+
+.text-secondary {
+    color: #6b7280;
+}
+
+.theme-light .text-primary {
+    color: var(--ks-text);
+}
+
+.theme-light .text-secondary {
+    color: #4b5563;
+}
+
+body:not(.theme-light) .text-primary {
+    color: var(--ks-dark-text-primary);
+}
+
+body:not(.theme-light) .text-secondary {
+    color: var(--ks-dark-text-secondary);
+}
+
+/* ====================================
+   #SIDEBAR THEMED STYLES
+   ==================================== */
+.sidebar-container {
+    transition: all 0.2s ease;
+}
+
+.theme-light .sidebar-container {
+    background-color: #ffffff;
+    border-right: 1px solid var(--ks-border);
+}
+
+body:not(.theme-light) .sidebar-container {
+    background-color: var(--ks-dark-bg-main);
+}
+
+/* The Bloom mark ships dark so it reads on the light sidebar; flip it to white in dark
+   theme. Mirrors the rule the student theme already uses. */
+.brand-logo {
+    transition: filter 0.2s ease;
+}
+
+body:not(.theme-light) .brand-logo {
+    filter: brightness(0) invert(1);
+}
+
+.logo-text {
+    background-image: linear-gradient(to right, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.nav-active {
+    background-color: rgba(99, 102, 241, 0.1);
+    /* indigo-500 on its own 10% tint is 3.95:1, under the 4.5 body text needs.
+       indigo-700 clears it and still reads as the same accent. */
+    color: #4338ca;
+    font-weight: 600;
+}
+
+.nav-inactive {
+    color: #6b7280;
+}
+
+.nav-inactive:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+    color: #6366f1;
+}
+
+body:not(.theme-light) .nav-active {
+    background-color: #1f2937;
+    color: #ffffff;
+}
+
+body:not(.theme-light) .nav-inactive {
+    color: #9ca3af;
+}
+
+body:not(.theme-light) .nav-inactive:hover {
+    background-color: #1f2937;
+    color: #ffffff;
+}
+
+/* Custom Scrollbar for theme */
+.theme-light::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+.theme-light::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+}
+
+body:not(.theme-light)::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+body:not(.theme-light)::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+@media (min-width: 768px) {
+    main {
+        margin-left: 16rem;
+        /* Matches w-64 width of sidebar */
+    }
+}
+
+/* ====================================
+   #CHAT & MESSAGES
+   ==================================== */
+/* Conversation List */
+.conversation-item {
+    border-bottom: 1px solid var(--ks-border);
+    border-radius: 0;
+}
+
+.conversation-item:last-child {
+    border-bottom: none;
+}
+
+body:not(.theme-light) .conversation-item {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Chat Bubbles */
+.msg-me {
+    background-color: #4f46e5;
+    /* Indigo 600 - Distinct primary color */
+    color: #ffffff;
+}
+
+.msg-them {
+    background-color: #e5e7eb;
+    /* Gray 200 - Distinct light gray */
+    color: #1f2937;
+}
+
+body:not(.theme-light) .msg-them {
+    background-color: #4b5563;
+    /* Gray 600 - Distinct dark gray */
+    color: #f3f4f6;
+}
+
+.cell {
+    user-select: none;
+    background: #f8fafc;
+    border: 1px solid #22c55e;
+    border-radius: 6px;
+}
+
+/* Hide spin buttons for number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+body:not(.theme-light) .cell {
+    background: var(--ks-dark-bg-card);
+    border-color: var(--ks-dark-shadow-base);
+}
+
+.cell.sel {
+    background: #dcfce7;
+    border-color: #22c55e;
+}
+
+body:not(.theme-light) .cell.sel {
+    background: #064e3b;
+    border-color: #22c55e;
+}
+
+.cell:hover {
+    border-color: #4f46e5;
+    /* var(--accent) */
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+}
+
+/* ====================================
+   #TABS - Tab Component Styles
+   ==================================== */
+
+/* Base tab button styles for settings page */
+.tab-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: transparent;
+}
+
+/* These were written for a dark strip only, and being class-on-class they outrank
+   every Tailwind text utility, so the markup could not override them: the active
+   tab stayed indigo-400 (2.79:1) and the rest gray-400 (2.38:1) on a white page. */
+.theme-light .tab-button { color: #475569; }
+body:not(.theme-light) .tab-button { color: #9ca3af; }
+
+.theme-light .tab-button:hover { color: #0f172a; border-bottom-color: #94a3b8; }
+body:not(.theme-light) .tab-button:hover { color: #d1d5db; border-bottom-color: #6b7280; }
+
+.tab-button.border-indigo-500 { border-bottom-color: #6366f1; }
+.theme-light .tab-button.border-indigo-500,
+.theme-light .tab-button.text-indigo-400,
+.theme-light .tab-button.text-indigo-600 { color: #4338ca; }
+body:not(.theme-light) .tab-button.border-indigo-500,
+body:not(.theme-light) .tab-button.text-indigo-400,
+body:not(.theme-light) .tab-button.text-indigo-600 { color: #818cf8; }
+
+.tab-button.border-transparent {
+    border-bottom-color: transparent;
+}
+
+.theme-light .tab-button.text-gray-400,
+.theme-light .tab-button.text-slate-600 { color: #475569; }
+body:not(.theme-light) .tab-button.text-gray-400,
+body:not(.theme-light) .tab-button.text-slate-600 { color: #9ca3af; }
+
+/* Tab panes */
+.tab-pane {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ====================================
+   #GLASS CONTAINERS
+   ==================================== */
+
+.glass {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+body:not(.theme-light) .glass {
+    background: var(--ks-dark-card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ====================================
+   #CARDS
+   ==================================== */
+
+.card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+body:not(.theme-light) .card {
+    background: var(--ks-dark-card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ====================================
+   #CHIPS & BADGES
+   ==================================== */
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.6875rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    background: #eef2ff;
+    color: #4b5563;
+    border: 1px solid #c7d2fe;
+}
+
+body:not(.theme-light) .chip {
+    background: transparent;
+    color: #e5e7eb;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ====================================
+   #HEATMAP (Activity Calendar)
+   ==================================== */
+
+.hm {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+}
+
+.hm-0 {
+    background: #1e293b;
+    border: 1px solid #334155;
+}
+
+.hm-1 {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+}
+
+.hm-2 {
+    background: #1e3a8a;
+    border: 1px solid #1e40af;
+}
+
+.hm-3 {
+    background: #2563eb;
+    border: 1px solid #3b82f6;
+}
+
+.hm-4 {
+    background: #3b82f6;
+    border: 1px solid #60a5fa;
+}
+
+.hm-5 {
+    background: #60a5fa;
+    border: 1px solid #93c5fd;
+}
+
+.theme-light .hm-0 {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+.theme-light .hm-1 {
+    background: #dbeafe;
+    border-color: #bfdbfe;
+}
+
+.theme-light .hm-2 {
+    background: #93c5fd;
+    border-color: #60a5fa;
+}
+
+.theme-light .hm-3 {
+    background: #60a5fa;
+    border-color: #3b82f6;
+}
+
+.theme-light .hm-4 {
+    background: #3b82f6;
+    border-color: #2563eb;
+}
+
+.theme-light .hm-5 {
+    background: #2563eb;
+    border-color: #1d4ed8;
+}
+
+.hm:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+}
+
+/* ====================================
+   #RADIAL PROGRESS (Donut Chart)
+   ==================================== */
+
+.radial {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(#6366f1 0deg,
+            #6366f1 calc(var(--progress, 0) * 3.6deg),
+            #1f2937 calc(var(--progress, 0) * 3.6deg),
+            #1f2937 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.radial .inner {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: #111827;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-light .radial {
+    background: conic-gradient(#6366f1 0deg,
+            #6366f1 calc(var(--progress, 0) * 3.6deg),
+            #e5e7eb calc(var(--progress, 0) * 3.6deg),
+            #e5e7eb 360deg);
+}
+
+.theme-light .radial .inner {
+    background: #ffffff;
+}
+
+/* ====================================
+   #SUMMARY ROW (Details/Summary)
+   ==================================== */
+
+.summary-row {
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+}
+
+.summary-row::-webkit-details-marker {
+    display: none;
+}
+
+details[open] .summary-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.theme-light details[open] .summary-row {
+    border-bottom-color: #e5e7eb;
+}

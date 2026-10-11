@@ -1,0 +1,111 @@
+{
+  "id": "ks1-english",
+  "version": 1,
+  "subject": "english",
+  "stage": "KS1",
+  "years": [1, 2],
+  "title": "KS1 English diagnostic",
+  "minutes": 20,
+  "curriculum": "National Curriculum in England, key stage 1 English programme of study (2013)",
+  "intro": "Your tutor will read the questions with you. Try to read the story and the spelling answers by yourself.",
+  "bands": { "strong": 75, "developing": 40 },
+  "skills": [
+    {
+      "id": "retrieval",
+      "name": "Finding information",
+      "why": "Finding details in a story is the first step to understanding what we read.",
+      "strong": "{name} reads carefully and finds details in a story easily.",
+      "developing": "{name} finds most details but sometimes misses one or answers from memory instead of checking.",
+      "gap": "{name} is not yet finding details in a story reliably. Every reading task builds on this, so it comes first.",
+      "next_step": "We will read short stories together and practise going back to the text to check."
+    },
+    {
+      "id": "inference",
+      "name": "Understanding the story",
+      "why": "Working out how characters feel and why things happen turns reading words into understanding stories.",
+      "strong": "{name} understands stories well, including how characters feel and why things happen.",
+      "developing": "{name} follows what happens but finds it harder to say how a character feels or why.",
+      "gap": "{name} is not yet confident explaining how characters feel or why things happen. This matters more as books get longer, so it is worth building now.",
+      "next_step": "We will talk about stories as we read, asking 'how do you know?' to build understanding."
+    },
+    {
+      "id": "spelling",
+      "name": "Phonics and spelling",
+      "why": "Knowing letter sounds and spelling patterns lets children read new words on their own and write them down.",
+      "strong": "{name} knows letter sounds well and spells common words accurately.",
+      "developing": "{name} knows most letter sounds but mixes up some spelling patterns, such as 'ai' and 'ay'.",
+      "gap": "{name} is not yet secure with letter sounds and spelling patterns. Reading and writing both depend on this, so it comes first.",
+      "next_step": "We will practise sounds and spelling patterns with short, fun games in every lesson."
+    },
+    {
+      "id": "writing",
+      "name": "Writing sentences",
+      "why": "Writing clear sentences with capital letters and full stops is the start of all written work.",
+      "strong": "{name} writes clear sentences with capital letters, full stops and joining words.",
+      "developing": "{name} can write simple sentences but often forgets capital letters or full stops.",
+      "gap": "{name} is not yet writing sentences with capital letters and full stops. This is used in every subject, so it is worth real focus now.",
+      "next_step": "We will write short sentences together each lesson, checking capital letters and full stops as we go."
+    }
+  ],
+  "passages": [
+    {
+      "id": "p1",
+      "title": "Tom's New Kite",
+      "text": "Tom had a new kite. It was red, with a long tail and yellow bows.\n\nOn Saturday, Tom and his big sister Amy took the kite to the park. The wind was strong and the trees were swaying.\n\nTom held the string tight. Amy ran with the kite and let it go. Up, up, up it went, high over the pond.\n\nThen a big gust of wind came. The kite spun round and round. Snap! The string broke. The kite flew away across the grass.\n\nTom's lip began to wobble.\n\n\"Don't worry,\" said Amy. \"Look!\"\n\nThe kite was stuck in a bush by the gate. Amy lifted Tom up, and he pulled it free.\n\n\"Next time, I will hold on with both hands,\" said Tom, and he smiled."
+    }
+  ],
+  "questions": [
+    { "id": "q01", "skill": "retrieval", "difficulty": 1, "type": "mcq", "marks": 1, "passage": "p1", "ref": "KS1 reading 1b: identify key details",
+      "stem": "What colour was Tom's kite?", "options": ["Yellow", "Blue", "Green", "Red"], "answer": 3,
+      "explain": "'It was red.' Yellow is the colour of the bows, so choosing it means the child picked the first colour word they saw." },
+    { "id": "q02", "skill": "spelling", "difficulty": 1, "type": "mcq", "marks": 1, "ref": "Y1: phonics; recognise rhyme",
+      "stem": "Which word rhymes with 'cat'?", "options": ["hat", "cot", "cut", "can"], "answer": 0,
+      "explain": "Hat and cat share the '-at' ending. Cot, cut and can share letters or a first sound but do not rhyme." },
+    { "id": "q03", "skill": "writing", "difficulty": 1, "type": "mcq", "marks": 1, "ref": "Y1: begin to punctuate sentences using a capital letter and a full stop",
+      "stem": "Which sentence is written correctly?", "options": ["my cat is black.", "my Cat is black.", "My cat is black.", "my cat Is black."], "answer": 2,
+      "explain": "A sentence starts with a capital letter and ends with a full stop. 'Cat' and 'Is' do not need capitals in the middle of a sentence." },
+    { "id": "q04", "skill": "retrieval", "difficulty": 2, "type": "mcq", "marks": 1, "passage": "p1", "ref": "KS1 reading 1b: identify key details",
+      "stem": "Who ran with the kite and let it go?", "options": ["Tom", "Amy", "Mum", "Dad"], "answer": 1,
+      "explain": "'Amy ran with the kite and let it go.' Tom held the string." },
+    { "id": "q05", "skill": "inference", "difficulty": 2, "type": "mcq", "marks": 1, "passage": "p1", "ref": "KS1 reading 1d: make inferences",
+      "stem": "When the kite flew away, 'Tom's lip began to wobble.'\n\nHow was Tom feeling?", "options": ["Happy", "Excited", "Sleepy", "Sad"], "answer": 3,
+      "explain": "A wobbling lip shows he was upset and about to cry. The kite has just flown away." },
+    { "id": "q06", "skill": "spelling", "difficulty": 2, "type": "mcq", "marks": 1, "ref": "Y1: spell words using the 'ai' digraph",
+      "stem": "Which word is spelt correctly?", "options": ["rain", "rane", "rayn", "rian"], "answer": 0,
+      "explain": "Rain uses 'ai' in the middle of the word. 'Rane' and 'rayn' spell the sound in other ways that do not fit this word; 'rian' mixes up the order." },
+    { "id": "q07", "skill": "writing", "difficulty": 2, "type": "mcq", "marks": 1, "ref": "Y1: capital letters for names of people, places and days",
+      "stem": "Which word should always start with a capital letter?", "options": ["park", "dog", "london", "jump"], "answer": 2,
+      "explain": "London is the name of a place, so it always needs a capital letter. The other words are ordinary words." },
+    { "id": "q08", "skill": "retrieval", "difficulty": 3, "type": "mcq", "marks": 1, "passage": "p1", "ref": "KS1 reading 1b: identify key details",
+      "stem": "Where did the kite get stuck?", "options": ["In a tree by the pond", "In the pond", "In a bush by the gate", "On a roof"], "answer": 2,
+      "explain": "'The kite was stuck in a bush by the gate.' The pond is mentioned earlier, which catches children who do not check." },
+    { "id": "q09", "skill": "spelling", "difficulty": 3, "type": "mcq", "marks": 1, "ref": "Y1: alternative spellings of the same sound (ee, ea)",
+      "stem": "Which word has the same sound as the 'ee' in 'tree'?", "options": ["bed", "sea", "tray", "bird"], "answer": 1,
+      "explain": "In 'sea', the letters 'ea' make the same sound as 'ee'. 'Bed' has a short 'e' sound." },
+    { "id": "q10", "skill": "inference", "difficulty": 3, "type": "mcq", "marks": 1, "passage": "p1", "ref": "KS1 reading 1d: make inferences",
+      "stem": "Why did the kite's string break?", "options": ["Amy cut it", "Tom let go of it", "A dog bit it", "A big gust of wind pulled the kite"], "answer": 3,
+      "explain": "The story says a big gust of wind came and the kite spun round just before 'Snap!'. The child has to link these events." },
+    { "id": "q11", "skill": "writing", "difficulty": 3, "type": "mcq", "marks": 1, "ref": "Y2: use subordination (because, when, if, that) and coordination (and, or, but)",
+      "stem": "Which word finishes this sentence best?\n\nI put on my coat ___ it was cold.", "options": ["so", "because", "or", "but"], "answer": 1,
+      "explain": "'Because' gives the reason for putting on a coat. 'So' reverses the cause, and 'or' and 'but' do not make sense." },
+    { "id": "q12", "skill": "retrieval", "difficulty": 4, "type": "multi", "marks": 1, "passage": "p1", "ref": "KS1 reading 1c: identify and explain the sequence of events",
+      "stem": "Which TWO things happened BEFORE the string broke?", "options": ["Amy let go of the kite", "Tom pulled the kite free", "The kite went up high over the pond", "The kite got stuck in a bush", "Tom smiled"], "answer": [0, 2],
+      "explain": "Amy let go, and the kite went up over the pond, before 'Snap!'. The other three happen after the string broke." },
+    { "id": "q13", "skill": "spelling", "difficulty": 4, "type": "mcq", "marks": 1, "ref": "Y2: add -er to words ending in y (change y to i)",
+      "stem": "Which word is spelt correctly?", "options": ["happier", "happyer", "happyier", "hapier"], "answer": 0,
+      "explain": "When a word ends in a consonant then y, change the y to i before adding -er: happy becomes happier." },
+    { "id": "q14", "skill": "inference", "difficulty": 4, "type": "mcq", "marks": 1, "passage": "p1", "ref": "KS1 reading 1e: predict what might happen",
+      "stem": "At the end, Tom says, 'Next time, I will hold on with both hands.'\n\nWhat does this tell us?", "options": ["He never wants to fly the kite again", "He has learned from what happened", "He wants Amy to fly it next time", "He is cross with Amy"], "answer": 1,
+      "explain": "Planning to hold on with both hands shows Tom has learned a lesson and wants to fly the kite again." },
+    { "id": "q15", "skill": "inference", "difficulty": 4, "type": "mcq", "marks": 1, "passage": "p1", "ref": "KS1 reading 1d: make inferences about characters",
+      "stem": "Which word best describes Amy in this story?", "options": ["Bossy", "Scared", "Helpful", "Lazy"], "answer": 2,
+      "explain": "Amy comforts Tom ('Don't worry') and lifts him up to reach the kite. That is helpful and kind." },
+    { "id": "q16", "skill": "writing", "difficulty": 4, "type": "written", "marks": 2, "ref": "Y2: write sentences with capital letters, full stops and joining words",
+      "stem": "Write one or two sentences about something you like to do outside.\n\nRemember your capital letters and full stops. Spend about 3 minutes on this.",
+      "rubric": [
+        { "marks": 1, "criterion": "At least one sentence that makes sense, starting with a capital letter and ending with a full stop" },
+        { "marks": 1, "criterion": "Uses a joining word (and, but, because, so, when) correctly, or writes a second correctly punctuated sentence" }
+      ],
+      "explain": "Judge sentence punctuation and sense, not handwriting or typing speed. Phonetically plausible spellings are fine here; spelling is tested elsewhere." }
+  ]
+}

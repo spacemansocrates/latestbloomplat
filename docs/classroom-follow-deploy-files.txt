@@ -1,0 +1,7 @@
+assets/livekit/views.js
+assets/livekit/book_sync.js
+assets/livekit/books.js
+assets/livekit/whiteboard.js
+assets/livekit/room.js
+components/lesson_book_pane.php
+components/lesson_room_live_shell.php
